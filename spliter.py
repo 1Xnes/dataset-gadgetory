@@ -43,33 +43,43 @@ class ImageCopier:
         if self.dataset_folder is not None and os.path.exists(self.yaml_file_path) and self.destination_folder is not None:
             images_folder = os.path.join(self.dataset_folder, "images")
             labels_folder = os.path.join(self.dataset_folder, "labels")
-
+    
+            missing_files_counter = 0  # Counter for missing files
+    
             for label_set in ["train", "val"]:
                 label_folder = os.path.join(labels_folder, label_set)
                 image_folder = os.path.join(images_folder, label_set)
-
+    
                 for label_file in os.listdir(label_folder):
                     with open(os.path.join(label_folder, label_file), 'r') as label_file_content:
                         lines = label_file_content.readlines()
                         for line in lines:
                             class_index = int(line.split()[0])
                             class_name = self.classes.get(class_index)
-
+    
                             if class_name is not None:
                                 source_image_path = os.path.join(image_folder, f"{label_file.replace('.txt', '.jpg')}")
                                 destination_folder = os.path.join(self.destination_folder, class_name)
-
+    
                                 if not os.path.exists(destination_folder):
                                     os.makedirs(destination_folder)
-
+    
                                 destination_image_path = os.path.join(destination_folder, f"{label_file.replace('.txt', '.jpg')}")
-
-                                shutil.copy(source_image_path, destination_image_path)
-
-            messagebox.showinfo("Success", "Images copied successfully.")
+    
+                                try:
+                                    shutil.copy(source_image_path, destination_image_path)
+                                except FileNotFoundError as e:
+                                    print(f"FileNotFoundError: {e} - Skipping {source_image_path}")
+                                    missing_files_counter += 1
+    
+            if missing_files_counter > 0:
+                messagebox.showwarning("Warning", f"{missing_files_counter} files were not found and skipped.")
+            else:
+                messagebox.showinfo("Success", "Images copied successfully.")
         else:
             messagebox.showerror("Error", "Dataset folder, YAML file, or destination folder not selected.")
-
+    
+    
 
 if __name__ == "__main__":
     root = Tk()
